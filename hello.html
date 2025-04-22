@@ -1,0 +1,300 @@
+<div class="aqi-widget">
+    <div class="aqi-header">
+        <h3>Current Air Quality in Lucknow</h3>
+        <div class="location">(26.8467°N, 80.9462°E)</div>
+    </div>
+    
+    <div class="aqi-display">
+        <div class="aqi-value">--</div>
+        <div class="aqi-info">
+            <div class="aqi-level">Loading...</div>
+            <div class="aqi-description"></div>
+        </div>
+    </div>
+    
+    <div class="pollutants-grid">
+        <div class="pollutant">
+            <div class="pollutant-icon">🫁</div>
+            <div class="pollutant-details">
+                <div class="pollutant-name">PM2.5</div>
+                <div class="pollutant-value pm25">--</div>
+                <div class="pollutant-unit">µg/m³</div>
+            </div>
+        </div>
+        
+        <div class="pollutant">
+            <div class="pollutant-icon">🌫️</div>
+            <div class="pollutant-details">
+                <div class="pollutant-name">PM10</div>
+                <div class="pollutant-value pm10">--</div>
+                <div class="pollutant-unit">µg/m³</div>
+            </div>
+        </div>
+        
+        <div class="pollutant">
+            <div class="pollutant-icon">☀️</div>
+            <div class="pollutant-details">
+                <div class="pollutant-name">Ozone</div>
+                <div class="pollutant-value o3">--</div>
+                <div class="pollutant-unit">µg/m³</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="aqi-footer">
+        <div class="updated-time">Updating data...</div>
+        <div class="source">Source: OpenWeatherMap</div>
+    </div>
+</div>
+
+<script>
+// Configuration with YOUR API KEY and coordinates
+const CONFIG = {
+    apiKey: 'd274f14f9a974a799c4bf6dad9ecafdb',
+    lat: 26.846695,
+    lon: 80.946167,
+    refreshInterval: 15 * 60 * 1000 // 15 minutes
+};
+
+// AQI Classification System
+const AQI_SCALE = [
+    {
+        level: 1,
+        name: "Good",
+        color: "#55A84F",
+        emoji: "😊",
+        message: "Air quality is satisfactory with little health risk"
+    },
+    {
+        level: 2,
+        name: "Moderate",
+        color: "#A3C853",
+        emoji: "😐",
+        message: "Acceptable quality but some pollutants may affect sensitive individuals"
+    },
+    {
+        level: 3,
+        name: "Unhealthy for Sensitive",
+        color: "#FED633",
+        emoji: "😷",
+        message: "Members of sensitive groups may experience health effects"
+    },
+    {
+        level: 4,
+        name: "Unhealthy",
+        color: "#F29E33",
+        emoji: "😨",
+        message: "Everyone may begin to experience health effects"
+    },
+    {
+        level: 5,
+        name: "Very Unhealthy",
+        color: "#E93F33",
+        emoji: "😱",
+        message: "Health warnings of emergency conditions"
+    },
+    {
+        level: 6,
+        name: "Hazardous",
+        color: "#AF2D24",
+        emoji: "☠️",
+        message: "Health alert: everyone may experience serious effects"
+    }
+];
+
+// DOM Elements
+const elements = {
+    aqiValue: document.querySelector('.aqi-value'),
+    aqiLevel: document.querySelector('.aqi-level'),
+    aqiDesc: document.querySelector('.aqi-description'),
+    pm25: document.querySelector('.pm25'),
+    pm10: document.querySelector('.pm10'),
+    o3: document.querySelector('.o3'),
+    updatedTime: document.querySelector('.updated-time')
+};
+
+// Fetch AQI Data
+async function getAQIData() {
+    const apiUrl = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${CONFIG.lat}&lon=${CONFIG.lon}&appid=${CONFIG.apiKey}`;
+    
+    try {
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Failed to fetch AQI data:", error);
+        throw error;
+    }
+}
+
+// Update UI with AQI Data
+function updateUI(data) {
+    const aqi = data.list[0].main.aqi;
+    const pollutants = data.list[0].components;
+    const timestamp = new Date(data.list[0].dt * 1000);
+    
+    // Get AQI level info
+    const aqiInfo = AQI_SCALE[aqi - 1] || AQI_SCALE[AQI_SCALE.length - 1];
+    
+    // Update AQI display
+    elements.aqiValue.textContent = aqi;
+    elements.aqiValue.style.color = aqiInfo.color;
+    elements.aqiLevel.innerHTML = `${aqiInfo.name} ${aqiInfo.emoji}`;
+    elements.aqiDesc.textContent = aqiInfo.message;
+    
+    // Update pollutant values
+    elements.pm25.textContent = pollutants.pm2_5.toFixed(1);
+    elements.pm10.textContent = pollutants.pm10.toFixed(1);
+    elements.o3.textContent = pollutants.o3.toFixed(1);
+    
+    // Update timestamp
+    elements.updatedTime.textContent = `Updated: ${timestamp.toLocaleString()}`;
+}
+
+// Main function to load and display data
+async function loadAQIData() {
+    try {
+        elements.updatedTime.textContent = "Fetching data...";
+        const aqiData = await getAQIData();
+        updateUI(aqiData);
+    } catch (error) {
+        elements.aqiLevel.textContent = "Data unavailable";
+        elements.updatedTime.textContent = `Error: ${error.message}`;
+    }
+}
+
+// Initial load
+loadAQIData();
+
+// Set up auto-refresh
+setInterval(loadAQIData, CONFIG.refreshInterval);
+</script>
+
+<style>
+.aqi-widget {
+    font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 20px;
+    max-width: 300px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    margin: 0 auto;
+    color: #333;
+}
+
+.aqi-header {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.aqi-header h3 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.3em;
+}
+
+.location {
+    font-size: 0.8em;
+    color: #7f8c8d;
+    margin-top: 4px;
+}
+
+.aqi-display {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    margin: 20px 0;
+    padding: 15px 0;
+    border-top: 1px solid #ecf0f1;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.aqi-value {
+    font-size: 3.5em;
+    font-weight: 700;
+    line-height: 1;
+    min-width: 80px;
+    text-align: center;
+}
+
+.aqi-info {
+    margin-left: 15px;
+}
+
+.aqi-level {
+    font-size: 1.2em;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.aqi-description {
+    font-size: 0.85em;
+    color: #7f8c8d;
+    line-height: 1.3;
+}
+
+.pollutants-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 20px 0;
+}
+
+.pollutant {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+}
+
+.pollutant-icon {
+    font-size: 1.5em;
+    margin-bottom: 5px;
+}
+
+.pollutant-name {
+    font-size: 0.8em;
+    color: #7f8c8d;
+    margin-bottom: 3px;
+}
+
+.pollutant-value {
+    font-weight: 700;
+    font-size: 1.1em;
+    margin-bottom: 2px;
+}
+
+.pollutant-unit {
+    font-size: 0.7em;
+    color: #95a5a6;
+}
+
+.aqi-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+    font-size: 0.75em;
+    color: #95a5a6;
+}
+
+.updated-time {
+    font-style: italic;
+}
+
+.source {
+    text-align: right;
+}
+
+@media (max-width: 350px) {
+    .aqi-widget {
+        padding: 15px;
+    }
+    
+    .pollutants-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
