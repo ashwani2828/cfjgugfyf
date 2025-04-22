@@ -298,3 +298,25 @@ setInterval(loadAQIData, CONFIG.refreshInterval);
     }
 }
 </style>
+export default async function handler(req, res) {
+  try {
+    const response = await fetch(
+      `https://api.openweathermap.org/data/2.5/air_pollution?lat=26.846695&lon=80.946167&appid=${process.env.OPENWEATHER_API_KEY}`
+    );
+    
+    if (!response.ok) throw new Error("API request failed");
+    const data = await response.json();
+    res.status(200).json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+}
+// Replace your existing fetch call with this:
+const response = await fetch('/api/aqi');  // Now calls your proxy route
+const data = await response.json();
+// Use data.list[0].main.aqi as before
+{
+  "routes": [
+    { "src": "/api/aqi", "dest": "/api/aqi.js" }
+  ]
+}
